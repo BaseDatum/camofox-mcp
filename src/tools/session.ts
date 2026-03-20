@@ -38,7 +38,8 @@ export function registerSessionTools(server: McpServer, deps: ToolDeps): void {
           throw new AppError("VALIDATION_ERROR", "cookies must be a JSON array");
         }
 
-        await deps.client.importCookies(parsed.userId, cookies, parsed.tabId);
+        const userId = deps.config.trustedUserId ?? parsed.userId;
+        await deps.client.importCookies(userId, cookies, parsed.tabId);
         return okResult({ success: true });
       } catch (error) {
         return toErrorResult(error);
@@ -150,8 +151,9 @@ export function registerSessionTools(server: McpServer, deps: ToolDeps): void {
           })
           .parse(input);
 
-        const result = await deps.client.toggleDisplay(parsed.userId, parsed.headless);
-        clearTrackedTabsByUserId(parsed.userId);
+        const toggleUserId = deps.config.trustedUserId ?? parsed.userId;
+        const result = await deps.client.toggleDisplay(toggleUserId, parsed.headless);
+        clearTrackedTabsByUserId(toggleUserId);
 
         return okResult(result);
       } catch (error) {

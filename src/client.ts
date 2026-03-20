@@ -284,10 +284,18 @@ export class CamofoxClient {
 
   private readonly apiKey?: string;
 
+  /**
+   * When set, forwarded as X-Dialogue-User-Id on every outbound request
+   * so that downstream infrastructure (e.g. HAProxy) can perform
+   * consistent-hash routing on the user ID.
+   */
+  private readonly trustedUserId?: string;
+
   constructor(config: Config) {
     this.baseUrl = config.camofoxUrl.replace(/\/$/, "");
     this.timeout = config.timeout;
     this.apiKey = config.apiKey;
+    this.trustedUserId = config.trustedUserId;
   }
 
   async healthCheck(): Promise<HealthResponse> {
@@ -951,6 +959,10 @@ export class CamofoxClient {
       if (this.apiKey) {
         headers.set("x-api-key", this.apiKey);
         headers.set("authorization", `Bearer ${this.apiKey}`);
+      }
+
+      if (this.trustedUserId) {
+        headers.set("x-dialogue-user-id", this.trustedUserId);
       }
 
       if (init.headers) {

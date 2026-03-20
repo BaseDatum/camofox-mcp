@@ -9,6 +9,12 @@ export interface Config {
   httpPort: number;
   httpHost: string;
   httpRateLimit: number;
+  /**
+   * Trusted user ID extracted from the X-Dialogue-User-Id HTTP header.
+   * When set, overrides any userId provided by the LLM in tool parameters
+   * and is forwarded on all outbound REST calls to the CamoFox browser.
+   */
+  trustedUserId?: string;
 }
 
 export interface HealthResponse {

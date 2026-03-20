@@ -73,7 +73,17 @@ export async function startHttpServer(config: Config = loadConfig()): Promise<vo
 
   app.post("/mcp", async (req: any, res: any) => {
     try {
-      const { server } = createServer(config);
+      // Extract trusted user ID from the X-Dialogue-User-Id header.
+      // When present, this overrides any userId the LLM provides in tool
+      // parameters and is forwarded on all outbound REST calls to the
+      // CamoFox browser server.
+      const trustedUserId =
+        req.headers["x-dialogue-user-id"] as string | undefined;
+      const perRequestConfig = trustedUserId
+        ? { ...config, trustedUserId, defaultUserId: trustedUserId }
+        : config;
+
+      const { server } = createServer(perRequestConfig);
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
 
       res.on("close", () => {

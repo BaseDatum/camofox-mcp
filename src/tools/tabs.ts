@@ -66,7 +66,9 @@ export function registerTabsTools(server: McpServer, deps: ToolDeps): void {
           })
           .parse(input);
 
-        const userId = parsed.userId ?? deps.config.defaultUserId;
+        // trustedUserId (from X-Dialogue-User-Id header) always wins —
+        // never trust a userId supplied by the LLM in tool parameters.
+        const userId = deps.config.trustedUserId ?? parsed.userId ?? deps.config.defaultUserId;
         const sessionKey = randomUUID();
         const tab = await deps.client.createTab({
           userId,
