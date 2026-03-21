@@ -115,6 +115,10 @@ export async function startHttpServer(config: Config = loadConfig()): Promise<vo
     res.status(405).json({ error: "Method not allowed in stateless HTTP mode" });
   });
 
+  app.get("/health", (_req: any, res: any) => {
+    res.status(200).json({ ok: true });
+  });
+
   if (!config.apiKey) {
     console.error(
       "[camofox-mcp] ⚠️  CAMOFOX_API_KEY not set in HTTP mode — if your CamoFox server requires auth, requests will fail."
