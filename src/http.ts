@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 
 import { CamofoxClient } from "./client.js";
 import { loadConfig } from "./config.js";
+import { syncUserCookies } from "./cookie-sync.js";
 import { createServer } from "./server.js";
 import { getAllTrackedTabs, removeTrackedTab, setupCleanup } from "./state.js";
 import type { Config } from "./types.js";
@@ -82,6 +83,16 @@ export async function startHttpServer(config: Config = loadConfig()): Promise<vo
       const perRequestConfig = trustedUserId
         ? { ...config, trustedUserId, defaultUserId: trustedUserId }
         : config;
+
+      // Auto-inject stored browser cookies into the user's camofox session.
+      // Runs async and doesn't block the MCP request — if it fails, the
+      // request proceeds without cookies.
+      if (trustedUserId && perRequestConfig.dialogueApiUrl) {
+        const cookieClient = new CamofoxClient(perRequestConfig);
+        syncUserCookies(trustedUserId, cookieClient, perRequestConfig.dialogueApiUrl).catch(
+          (err) => console.error("[camofox-mcp] cookie-sync background error:", err)
+        );
+      }
 
       const { server } = createServer(perRequestConfig);
       const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });

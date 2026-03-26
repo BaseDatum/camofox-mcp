@@ -15,6 +15,13 @@ export interface Config {
    * and is forwarded on all outbound REST calls to the CamoFox browser.
    */
   trustedUserId?: string;
+  /**
+   * Dialogue API server URL for fetching user browser cookies.
+   * When set, camofox-mcp will auto-inject stored browser cookies
+   * into the CamoFox browser session on first use.
+   * Set via DIALOGUE_API_SERVER_URL env var.
+   */
+  dialogueApiUrl?: string;
 }
 
 export interface HealthResponse {

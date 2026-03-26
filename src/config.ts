@@ -139,6 +139,7 @@ export function loadConfig(argv = process.argv.slice(2), env = process.env): Con
     transport: cli.transport ?? envTransport ?? "stdio",
     httpPort: cli.httpPort ?? (Number.isNaN(httpPortFromEnv) ? 3000 : httpPortFromEnv),
     httpHost: cli.httpHost ?? env.CAMOFOX_HTTP_HOST ?? "127.0.0.1",
-    httpRateLimit: cli.httpRateLimit ?? (Number.isNaN(httpRateLimitFromEnv) ? 60 : httpRateLimitFromEnv)
+    httpRateLimit: cli.httpRateLimit ?? (Number.isNaN(httpRateLimitFromEnv) ? 60 : httpRateLimitFromEnv),
+    dialogueApiUrl: env.DIALOGUE_API_SERVER_URL || undefined
   };
 }
