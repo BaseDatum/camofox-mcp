@@ -2,11 +2,18 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json ./
+# Copy shared-bao-auth package from named build context and build it.
+# Local: docker build --build-context shared-bao-auth=../../packages/shared-bao-auth-ts .
+# CI:   --build-context shared-bao-auth=<path to packages/shared-bao-auth-ts>
+COPY --from=shared-bao-auth / /packages/shared-bao-auth-ts
+RUN cd /packages/shared-bao-auth-ts && npm install && npm run build
 
-# Install ALL dependencies (including devDeps for tsc)
-RUN npm ci
+# Copy package.json (lockfile excluded — regenerated because file: dependency
+# on shared-bao-auth resolves differently inside Docker via --build-context).
+COPY package.json ./
+
+# Install ALL dependencies (including devDeps for tsc).
+RUN npm install
 
 # Copy source
 COPY tsconfig.json ./
@@ -34,6 +41,8 @@ WORKDIR /app
 COPY --from=builder --chown=camofox:camofox /app/dist ./dist
 COPY --from=builder --chown=camofox:camofox /app/node_modules ./node_modules
 COPY --from=builder --chown=camofox:camofox /app/package.json ./
+# shared-bao-auth symlink in node_modules points to this path
+COPY --from=builder --chown=camofox:camofox /packages/shared-bao-auth-ts /packages/shared-bao-auth-ts
 
 # Ensure the non-root user can write under /app if future features need it
 RUN chown -R camofox:camofox /app

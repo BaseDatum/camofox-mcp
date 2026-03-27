@@ -11,6 +11,7 @@ import { syncUserCookies } from "./cookie-sync.js";
 import { createServer } from "./server.js";
 import { getAllTrackedTabs, removeTrackedTab, setupCleanup } from "./state.js";
 import type { Config } from "./types.js";
+import { McpAuthValidator, AuthError } from "shared-bao-auth";
 
 let httpServer: ReturnType<ReturnType<typeof createMcpExpressApp>["listen"]> | null = null;
 let cleanupClient: CamofoxClient | null = null;
@@ -72,21 +73,34 @@ export async function startHttpServer(config: Config = loadConfig()): Promise<vo
 
   app.use("/mcp", limiter);
 
+  // Module-level auth validator — initialized lazily.
+  let mcpValidator: McpAuthValidator | null = null;
+  function getValidator(): McpAuthValidator {
+    if (!mcpValidator) mcpValidator = new McpAuthValidator();
+    return mcpValidator;
+  }
+
   app.post("/mcp", async (req: any, res: any) => {
     try {
-      // Extract trusted user ID from the X-Dialogue-User-Id header.
-      // When present, this overrides any userId the LLM provides in tool
-      // parameters and is forwarded on all outbound REST calls to the
-      // CamoFox browser server.
-      const trustedUserId =
-        req.headers["x-dialogue-user-id"] as string | undefined;
+      // Authenticate via OpenBao Vault token.
+      // The user_id is extracted from the token's entity alias (bound to the
+      // pod's per-user ServiceAccount), preventing user impersonation.
+      let trustedUserId: string | undefined;
+      try {
+        trustedUserId = await getValidator().extractUserId(
+          req.headers["authorization"] as string | undefined,
+        );
+      } catch (err) {
+        const msg = err instanceof AuthError ? err.message : "Authentication failed";
+        res.status(401).json({ error: msg });
+        return;
+      }
+
       const perRequestConfig = trustedUserId
         ? { ...config, trustedUserId, defaultUserId: trustedUserId }
         : config;
 
       // Auto-inject stored browser cookies into the user's camofox session.
-      // Runs async and doesn't block the MCP request — if it fails, the
-      // request proceeds without cookies.
       if (trustedUserId && perRequestConfig.dialogueApiUrl) {
         const cookieClient = new CamofoxClient(perRequestConfig);
         syncUserCookies(trustedUserId, cookieClient, perRequestConfig.dialogueApiUrl).catch(

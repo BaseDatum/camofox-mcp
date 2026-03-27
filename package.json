@@ -60,6 +60,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.26.0",
     "express-rate-limit": "^8.2.1",
+    "shared-bao-auth": "file:../../packages/shared-bao-auth-ts",
     "zod": "4.3.6"
   },
   "devDependencies": {
