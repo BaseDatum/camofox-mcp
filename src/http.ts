@@ -101,11 +101,14 @@ export async function startHttpServer(config: Config = loadConfig()): Promise<vo
         : config;
 
       // Auto-inject stored browser cookies into the user's camofox session.
+      // Awaited so cookies are present before tool execution (e.g. create_tab).
       if (trustedUserId && perRequestConfig.dialogueApiUrl) {
-        const cookieClient = new CamofoxClient(perRequestConfig);
-        syncUserCookies(trustedUserId, cookieClient, perRequestConfig.dialogueApiUrl).catch(
-          (err) => console.error("[camofox-mcp] cookie-sync background error:", err)
-        );
+        try {
+          const cookieClient = new CamofoxClient(perRequestConfig);
+          await syncUserCookies(trustedUserId, cookieClient, perRequestConfig.dialogueApiUrl);
+        } catch (err) {
+          console.error("[camofox-mcp] cookie-sync error:", err);
+        }
       }
 
       const { server } = createServer(perRequestConfig);
